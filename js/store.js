@@ -4,6 +4,7 @@ import {
   doc, collection, setDoc, updateDoc, deleteDoc, addDoc, getDoc, runTransaction, writeBatch, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
 import { getDb } from './db.js';
+import { codificar } from './core/firestore-codec.js';
 import { newId, normalizarConfig, LigaError, validarNombreJugador, validarInscripcion, prepararPartido } from './core/model.js';
 import { canAddMatch, generarRoundRobin, generarPlayoffs, tieneDependientes, crucesPlayoffsAbiertos, pendientes } from './core/fixtures.js';
 import { computeStandings } from './core/standings.js';
@@ -14,12 +15,9 @@ function ahoraIso() {
   return new Date().toISOString();
 }
 
-// Firestore no admite listas anidadas: los sets [[6,4],[3,6]] se guardan como [{a:6,b:4},{a:3,b:6}].
-// La conversión inversa está en db.js (docsDe).
-function paraFirestore(partido) {
-  const sets = Array.isArray(partido.sets) ? partido.sets.map((s) => ({ a: Number(s[0]), b: Number(s[1]) })) : [];
-  return { ...partido, sets };
-}
+// Firestore no admite listas anidadas (sets, jornadas del calendario): se codifican al escribir
+// y db.js las decodifica al leer. Ver core/firestore-codec.js.
+const paraFirestore = codificar;
 
 function entradaHistorial(batchOrTx, db, accion, detalle, actor) {
   const ref = doc(collection(db, 'historial'));
@@ -43,7 +41,7 @@ export async function guardarConfig(liga, cambios, actor) {
   // Si cambia el formato de liga a uno con tope, verificar que no se viole.
   const batch = writeBatch(db);
   const { updatedAt, updatedBy, ...resto } = nueva;
-  batch.set(doc(db, 'liga', 'config'), { ...resto, updatedAt: ahoraIso(), updatedBy: actor || null });
+  batch.set(doc(db, 'liga', 'config'), paraFirestore({ ...resto, updatedAt: ahoraIso(), updatedBy: actor || null }));
   entradaHistorial(batch, db, 'config', 'Configuración actualizada', actor);
   await batch.commit();
   return nueva;
@@ -311,7 +309,7 @@ export async function generarCalendario(liga, actor) {
   const cal = generarRoundRobin(ids, vueltas);
   const calendario = { generadoEn: ahoraIso(), jugadores: cal.jugadores, jornadas: cal.jornadas, libres: cal.libres };
   const batch = writeBatch(db);
-  batch.update(doc(db, 'liga', 'config'), { calendario, updatedAt: ahoraIso(), updatedBy: actor || null });
+  batch.update(doc(db, 'liga', 'config'), paraFirestore({ calendario, updatedAt: ahoraIso(), updatedBy: actor || null }));
   entradaHistorial(batch, db, 'calendario', `Calendario generado: ${cal.jornadas.length} jornadas, ${ids.length} jugadores`, actor);
   await batch.commit();
   return calendario;
@@ -332,7 +330,7 @@ export async function generarLlavePlayoffs(liga, actor) {
   const tabla = computeStandings(liga).filter((f) => f.activo);
   const po = generarPlayoffs(tabla, { clasificados: liga.config.playoffs.clasificados, tercerPuesto: liga.config.playoffs.tercerPuesto, ahora: ahoraIso() });
   const batch = writeBatch(db);
-  batch.set(doc(db, 'playoffs', 'actual'), po);
+  batch.set(doc(db, 'playoffs', 'actual'), paraFirestore(po));
   entradaHistorial(batch, db, 'playoffs', `Llave de playoffs generada con ${po.clasificados} clasificados`, actor);
   await batch.commit();
   return po;

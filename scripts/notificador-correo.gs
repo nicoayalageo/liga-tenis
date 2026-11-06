@@ -130,7 +130,7 @@ function valor_(v) {
 function marcador_(p) {
   var sets = (p.sets || []).map(function (s) {
     if (Array.isArray(s)) return s.join('-');
-    if (s && typeof s === 'object') return (s.a !== undefined ? s.a + '-' + s.b : JSON.stringify(s));
+    if (s && typeof s === 'object' && Array.isArray(s._l)) return s._l.join('-'); // lista anidada envuelta (ver js/core/firestore-codec.js)
     return String(s);
   });
   var texto = sets.join(' ');

@@ -7,6 +7,7 @@ import {
 import { getAuth } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { firebaseConfig, FIREBASE_CONFIGURADO } from './firebase-config.js';
 import { normalizarConfig } from './core/model.js';
+import { decodificar } from './core/firestore-codec.js';
 
 export { FIREBASE_CONFIGURADO };
 
@@ -33,11 +34,8 @@ export function getAuthInstance() {
   return firebase().auth;
 }
 
-// Los sets se guardan en Firestore como [{a,b}] porque no admite listas anidadas; aquí vuelven a [[a,b]].
-function desdeFirestore(datos) {
-  if (!datos || !Array.isArray(datos.sets)) return datos;
-  return { ...datos, sets: datos.sets.map((s) => (Array.isArray(s) ? s : [Number(s.a), Number(s.b)])) };
-}
+// Las listas anidadas (sets, jornadas) se guardan envueltas en mapas; aquí se desenvuelven.
+const desdeFirestore = decodificar;
 
 function docsDe(snap) {
   return snap.docs.map((d) => desdeFirestore({ id: d.id, ...d.data() }));
@@ -65,7 +63,7 @@ export function suscribirLiga(callback, onError = () => {}) {
   };
   const subs = [
     onSnapshot(doc(db, 'liga', 'config'), (s) => {
-      estado.config = { datos: s.exists() ? s.data() : {} };
+      estado.config = { datos: s.exists() ? desdeFirestore(s.data()) : {} };
       if (s.exists() && s.data().updatedAt) ultimaActualizacion = s.data().updatedAt;
       emitir(s.metadata);
     }, onError),
@@ -78,7 +76,7 @@ export function suscribirLiga(callback, onError = () => {}) {
       emitir(s.metadata);
     }, onError),
     onSnapshot(doc(db, 'playoffs', 'actual'), (s) => {
-      estado.playoffs = { datos: s.exists() ? s.data() : null };
+      estado.playoffs = { datos: s.exists() ? desdeFirestore(s.data()) : null };
       emitir(s.metadata);
     }, onError),
   ];
