@@ -1,0 +1,14 @@
+{
+  "name": "liga-tenis",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Liga de tenis en polvo de ladrillo: tabla, resultados y aprobación de partidos.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "for f in js/*.js js/ui/*.js js/core/*.js; do node --check \"$f\" || exit 1; done",
+    "serve": "python3 -m http.server 8080",
+    "rules": "npx firebase-tools deploy --only firestore"
+  },
+  "license": "SEE LICENSE IN LICENSE"
+}

@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "propuestas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estado", "order": "ASCENDING" },
+        { "fieldPath": "creadoEn", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "propuestas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "enviadoPorUid", "order": "ASCENDING" },
+        { "fieldPath": "creadoEn", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

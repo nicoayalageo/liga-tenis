@@ -1,0 +1,25 @@
+/* Estilos exclusivos de la administración. */
+.admin-barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 0; }
+.admin-barra__quien { display: flex; align-items: center; gap: 10px; font-size: 0.95rem; }
+.acceso { max-width: 440px; margin: 40px auto; }
+.acceso h2 { margin-bottom: 6px; }
+.acceso .alternar { font-size: 0.9rem; margin-top: 10px; }
+.lista-simple { display: grid; gap: 8px; }
+.lista-simple li { list-style: none; display: flex; align-items: center; gap: 10px; background: var(--bg-elevado); border: 1px solid var(--borde); border-radius: var(--radio-sm); padding: 10px 12px; flex-wrap: wrap; }
+.lista-simple li .texto { flex: 1; min-width: 160px; }
+.lista-simple li .texto small { display: block; color: var(--texto-suave); font-size: 0.82rem; }
+.lista-simple ul { padding: 0; margin: 0; }
+.propuesta { border-left: 4px solid var(--ocre); }
+.propuesta--invalida { border-left-color: var(--error); }
+.propuesta__cab { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.propuesta__marcador { font-family: var(--fuente-titulo); font-size: 1.5rem; margin: 6px 0; }
+.historial { font-size: 0.92rem; }
+.historial li { list-style: none; display: grid; grid-template-columns: 150px 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--borde); }
+.historial li small { color: var(--texto-suave); }
+.historial ul { padding: 0; margin: 0; }
+.tabla-admin th, .tabla-admin td { text-align: left; }
+.inline-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.inline-form input { flex: 1; min-width: 160px; }
+.conf-seccion { margin-bottom: 26px; }
+.conf-seccion h3 { margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--borde); }
+@media (max-width: 640px) { .historial li { grid-template-columns: 1fr; gap: 2px; } }

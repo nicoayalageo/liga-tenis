@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://www.gstatic.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src https://*.firebaseapp.com; base-uri 'self'; form-action 'self'">
+  <meta name="description" content="Tabla de posiciones, resultados y calendario de la liga de tenis en arcilla.">
+  <meta name="theme-color" content="#C8562B">
+  <title>Liga de Tenis · Tabla y resultados</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23C8562B'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23E0DF55'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=Source+Sans+3:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="contenedor">
+      <div class="hero__barra">
+        <div class="hero__marca"><span class="pelota" aria-hidden="true"></span> Liga en arcilla</div>
+        <div class="hero__acciones">
+          <button type="button" class="btn btn--icono" data-tema aria-label="Cambiar tema">☾</button>
+          <a class="btn btn--icono" href="admin.html" aria-label="Administración" title="Administración">⚙</a>
+        </div>
+      </div>
+      <div class="hero__cuerpo">
+        <div class="hero__temporada" id="temporada">Liga de tenis en arcilla</div>
+        <h1 class="hero__titulo" id="titulo">Liga de Tenis</h1>
+        <div class="hero__lema" id="lema"></div>
+        <div class="hero__meta">
+          <span class="chip chip--hero chip--vivo" id="actualizado">En vivo</span>
+          <span class="chip chip--hero" id="formato"></span>
+          <button type="button" class="btn btn--hero" data-cargar-resultado>Cargar resultado</button>
+        </div>
+        <div class="stats" id="stats" style="margin-top:18px"></div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="nav" aria-label="Secciones">
+    <div class="contenedor">
+      <ul class="nav__lista">
+        <li><a href="#tabla-sec" class="activo">Tabla</a></li>
+        <li><a href="#resultados-sec">Resultados</a></li>
+        <li><a href="#calendario">Calendario</a></li>
+        <li><a href="#playoffs">Playoffs</a></li>
+        <li><a href="#jugadores-sec">Jugadores</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="contenedor">
+    <div id="cargando" class="pila" aria-live="polite">
+      <div class="skeleton" style="min-height:220px"></div>
+      <div class="skeleton" style="min-height:120px"></div>
+    </div>
+    <div id="error" class="aviso aviso--error" hidden>
+      <strong>No se pudo cargar la liga.</strong> <span id="error-texto"></span>
+      <div style="margin-top:8px"><button type="button" class="btn btn--sm btn--sec" id="reintentar">Reintentar</button></div>
+    </div>
+    <div id="sin-configurar" class="vacio" hidden>
+      <h3>La liga aún no está configurada</h3>
+      <p>El administrador debe definir el formato y los jugadores desde la <a href="admin.html">administración</a>.</p>
+    </div>
+
+    <div id="contenido" class="pila" hidden style="gap:36px">
+      <section id="tabla-sec">
+        <div class="seccion__cabecera"><h2>Tabla de posiciones</h2><span class="seccion__sub">Se actualiza al aprobar cada partido</span></div>
+        <div id="tabla"></div>
+      </section>
+
+      <div id="mis-envios" hidden></div>
+
+      <section id="resultados-sec">
+        <div class="seccion__cabecera"><h2>Resultados</h2><button type="button" class="btn btn--sm" data-cargar-resultado>Cargar resultado</button></div>
+        <div id="resultados"></div>
+      </section>
+
+      <section id="calendario" hidden>
+        <div class="seccion__cabecera"><h2>Calendario</h2><span class="seccion__sub">Los partidos pueden jugarse en cualquier orden</span></div>
+        <div id="calendario-lista"></div>
+      </section>
+
+      <section id="playoffs" hidden>
+        <div class="seccion__cabecera"><h2>Playoffs</h2></div>
+        <div id="playoffs-llave"></div>
+      </section>
+
+      <section id="jugadores-sec">
+        <div class="seccion__cabecera"><h2>Jugadores</h2></div>
+        <div id="jugadores"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="contenedor">
+    <span class="marca">Liga en arcilla</span>
+    <span>© 2026 Nicolás Ayala Lara. Todos los derechos reservados.</span>
+  </footer>
+
+  <script type="module" src="js/app-public.js"></script>
+</body>
+</html>

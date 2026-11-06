@@ -1,0 +1,117 @@
+rules_version = '2';
+
+// Reglas de seguridad de la liga.
+// - Lectura pública de la liga, jugadores, partidos aprobados y playoffs.
+// - Los jugadores (sesión anónima) solo pueden crear propuestas con el PIN correcto.
+// - Solo los administradores escriben datos definitivos.
+// - El propietario (correo verificado) puede darse de alta como primer administrador.
+
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function emailPropietario() {
+      return 'nicolas.ayala@ug.uchile.cl';
+    }
+
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    function esAdmin() {
+      return autenticado() && exists(/databases/$(db)/documents/admins/$(request.auth.uid));
+    }
+
+    function esPropietario() {
+      return autenticado()
+        && request.auth.token.email == emailPropietario()
+        && request.auth.token.email_verified == true;
+    }
+
+    function acceso() {
+      return get(/databases/$(db)/documents/privado/acceso).data;
+    }
+
+    function esFecha(s) {
+      return s is string && s.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    function propuestaValida() {
+      let d = request.resource.data;
+      return d.keys().hasOnly([
+          'fase', 'llaveId', 'jugador1', 'jugador2', 'fecha', 'formatoPartido', 'sets', 'ganador',
+          'estado', 'nota', 'estadoPropuesta', 'enviadoPorUid', 'enviadoComo', 'pin', 'creadoEn',
+          'resueltoPor', 'resueltoEn', 'motivoRechazo', 'partidoId'
+        ])
+        && d.keys().hasAll(['fase', 'jugador1', 'jugador2', 'fecha', 'formatoPartido', 'sets', 'estado',
+          'estadoPropuesta', 'enviadoPorUid', 'enviadoComo', 'pin', 'creadoEn'])
+        && d.fase in ['liga', 'playoffs']
+        && d.jugador1 is string && d.jugador2 is string && d.jugador1 != d.jugador2
+        && d.jugador1.size() <= 40 && d.jugador2.size() <= 40
+        && esFecha(d.fecha)
+        && d.formatoPartido is string && d.formatoPartido.size() <= 20
+        && d.sets is list && d.sets.size() <= 7
+        && d.estado in ['completo', 'retiro', 'wo']
+        && (!('ganador' in d) || d.ganador == null || d.ganador is string)
+        && (!('nota' in d) || (d.nota is string && d.nota.size() <= 200))
+        && (!('llaveId' in d) || d.llaveId == null || d.llaveId is string)
+        && d.estadoPropuesta == 'pendiente'
+        && d.enviadoPorUid == request.auth.uid
+        && d.enviadoComo is string && d.enviadoComo.size() <= 40
+        && d.pin is string && d.pin.size() <= 20
+        && d.creadoEn == request.time
+        && !('resueltoPor' in d) && !('resueltoEn' in d) && !('motivoRechazo' in d) && !('partidoId' in d);
+    }
+
+    match /liga/{doc} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+
+    match /jugadores/{id} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+
+    match /partidos/{id} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+
+    match /playoffs/{id} {
+      allow read: if true;
+      allow write: if esAdmin();
+    }
+
+    match /propuestas/{id} {
+      allow read: if esAdmin() || (autenticado() && resource.data.enviadoPorUid == request.auth.uid);
+      allow create: if autenticado() && propuestaValida() && request.resource.data.pin == acceso().pin;
+      allow update, delete: if esAdmin();
+    }
+
+    match /admins/{uid} {
+      allow read: if esAdmin() || (autenticado() && request.auth.uid == uid);
+      allow create: if esAdmin() || (autenticado() && request.auth.uid == uid && esPropietario());
+      allow update: if esAdmin();
+      allow delete: if esAdmin() && request.auth.uid != uid;
+    }
+
+    match /solicitudesAdmin/{uid} {
+      allow read: if esAdmin() || (autenticado() && request.auth.uid == uid);
+      allow create: if autenticado() && request.auth.uid == uid
+        && request.auth.token.email != null && request.auth.token.email_verified == true
+        && request.resource.data.keys().hasOnly(['email', 'nombre', 'creadoEn'])
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.nombre is string && request.resource.data.nombre.size() <= 60;
+      allow delete: if esAdmin() || (autenticado() && request.auth.uid == uid);
+    }
+
+    match /privado/{doc} {
+      allow read, update: if esAdmin();
+      allow create: if esAdmin() || esPropietario();
+    }
+
+    match /historial/{id} {
+      allow read, create: if esAdmin();
+    }
+  }
+}

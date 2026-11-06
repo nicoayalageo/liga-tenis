@@ -1,0 +1,106 @@
+/* Paleta inspirada en la tierra batida: arcilla, verde de cancha, blanco de línea y ocre. */
+:root {
+  --arcilla: #C8562B;
+  --arcilla-oscura: #A3421E;
+  --arcilla-clara: #E07A4F;
+  --arcilla-suave: #F3DCCF;
+  --verde: #0E4D3A;
+  --verde-claro: #1B6B52;
+  --verde-profundo: #0A1F18;
+  --verde-suave: #DCE9E2;
+  --ocre: #E9B44C;
+  --ocre-suave: #F8EBC9;
+  --linea: #FAFAF7;
+
+  --bg: #F5F0E8;
+  --bg-elevado: #FFFFFF;
+  --bg-suave: #EFE7DB;
+  --texto: #1C1A17;
+  --texto-suave: #5F5B55;
+  --texto-invertido: #FAFAF7;
+  --borde: #E3DACD;
+  --borde-fuerte: #CFC3B2;
+  --primario: var(--arcilla);
+  --primario-hover: var(--arcilla-oscura);
+  --primario-texto: #FAFAF7;
+  --secundario: var(--verde);
+  --acento: var(--ocre);
+  --exito: #1F7A4D;
+  --exito-suave: #DDF1E5;
+  --error: #B3261E;
+  --error-suave: #F9DEDC;
+  --aviso: #9A6A00;
+  --aviso-suave: #FBF0CF;
+  --sombra: 0 1px 2px rgba(28, 26, 23, 0.06), 0 8px 24px rgba(28, 26, 23, 0.08);
+  --sombra-suave: 0 1px 2px rgba(28, 26, 23, 0.05);
+  --radio: 14px;
+  --radio-sm: 8px;
+  --fuente-titulo: 'Playfair Display', 'Georgia', serif;
+  --fuente-texto: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif;
+  --ganador: var(--arcilla);
+  --hero-bg: linear-gradient(135deg, #B94D25 0%, #C8562B 45%, #D96A3C 100%);
+  --hero-texto: #FAFAF7;
+  --fila-par: rgba(200, 86, 43, 0.04);
+  --fila-hover: rgba(200, 86, 43, 0.09);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0A1F18;
+    --bg-elevado: #11291F;
+    --bg-suave: #163327;
+    --texto: #F3F1EA;
+    --texto-suave: #A9B8B0;
+    --texto-invertido: #0A1F18;
+    --borde: #1F3A2F;
+    --borde-fuerte: #2E4D40;
+    --primario: #E07A4F;
+    --primario-hover: #EB8E66;
+    --arcilla-suave: #3A2217;
+    --verde-suave: #163327;
+    --ocre-suave: #3A2F12;
+    --exito: #5BD08E;
+    --exito-suave: #11372A;
+    --error: #FF8A80;
+    --error-suave: #43201E;
+    --aviso: #F2C96B;
+    --aviso-suave: #3A2F12;
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+    --sombra-suave: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --ganador: #F0956C;
+    --hero-bg: linear-gradient(135deg, #8E3A1A 0%, #B04A22 50%, #C8562B 100%);
+    --fila-par: rgba(255, 255, 255, 0.025);
+    --fila-hover: rgba(224, 122, 79, 0.12);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0A1F18;
+  --bg-elevado: #11291F;
+  --bg-suave: #163327;
+  --texto: #F3F1EA;
+  --texto-suave: #A9B8B0;
+  --texto-invertido: #0A1F18;
+  --borde: #1F3A2F;
+  --borde-fuerte: #2E4D40;
+  --primario: #E07A4F;
+  --primario-hover: #EB8E66;
+  --arcilla-suave: #3A2217;
+  --verde-suave: #163327;
+  --ocre-suave: #3A2F12;
+  --exito: #5BD08E;
+  --exito-suave: #11372A;
+  --error: #FF8A80;
+  --error-suave: #43201E;
+  --aviso: #F2C96B;
+  --aviso-suave: #3A2F12;
+  --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --sombra-suave: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --ganador: #F0956C;
+  --hero-bg: linear-gradient(135deg, #8E3A1A 0%, #B04A22 50%, #C8562B 100%);
+  --fila-par: rgba(255, 255, 255, 0.025);
+  --fila-hover: rgba(224, 122, 79, 0.12);
+  color-scheme: dark;
+}

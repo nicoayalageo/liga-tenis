@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://www.gstatic.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data:; frame-src https://*.firebaseapp.com; base-uri 'self'; form-action 'self'">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0E4D3A">
+  <title>Administración · Liga de Tenis</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%230E4D3A'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23E0DF55'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=Source+Sans+3:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+    .hero--admin { --hero-bg: linear-gradient(135deg, #0A1F18 0%, #0E4D3A 55%, #1B6B52 100%); }
+  </style>
+</head>
+<body>
+  <header class="hero hero--admin">
+    <div class="contenedor">
+      <div class="hero__barra">
+        <div class="hero__marca"><span class="pelota" aria-hidden="true"></span> <a href="index.html" style="color:inherit">Liga en arcilla</a> · Administración</div>
+        <div class="hero__acciones">
+          <button type="button" class="btn btn--icono" data-tema aria-label="Cambiar tema">☾</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <div id="acceso"></div>
+    <div id="sin-autorizar" hidden></div>
+
+    <div id="panel" hidden>
+      <div class="admin-barra">
+        <div>
+          <h2 id="liga-nombre">Liga</h2>
+          <div class="admin-barra__quien texto-suave">Conectado como <strong id="quien"></strong></div>
+        </div>
+        <div class="acciones">
+          <a class="btn btn--sec btn--sm" href="index.html" target="_blank" rel="noopener">Ver página pública</a>
+          <button type="button" class="btn btn--sec btn--sm" data-exportar>Exportar respaldo</button>
+          <button type="button" class="btn btn--fantasma btn--sm" data-salir-barra>Salir</button>
+        </div>
+      </div>
+      <div id="aviso-config" class="aviso aviso--aviso" hidden style="margin-bottom:12px">La liga aún no está configurada. Define nombre, formato y jugadores en <strong>Configuración</strong>.</div>
+      <div class="tabs" role="tablist">
+        <button type="button" data-tab="pendientes">Pendientes <span class="contador" hidden>0</span></button>
+        <button type="button" data-tab="resultados">Resultados</button>
+        <button type="button" data-tab="jugadores">Jugadores</button>
+        <button type="button" data-tab="config">Configuración</button>
+        <button type="button" data-tab="admins">Administradores <span class="contador" hidden>0</span></button>
+        <button type="button" data-tab="historial">Historial</button>
+      </div>
+      <div class="panel" data-panel="pendientes" id="panel-pendientes"></div>
+      <div class="panel" data-panel="resultados" id="panel-resultados"></div>
+      <div class="panel" data-panel="jugadores" id="panel-jugadores"></div>
+      <div class="panel" data-panel="config" id="panel-config"></div>
+      <div class="panel" data-panel="admins" id="panel-admins"></div>
+      <div class="panel" data-panel="historial" id="panel-historial"></div>
+    </div>
+  </main>
+
+  <footer class="contenedor">
+    <span class="marca">Liga en arcilla</span>
+    <span>© 2026 Nicolás Ayala Lara. Todos los derechos reservados.</span>
+  </footer>
+
+  <script type="module" src="js/app-admin.js"></script>
+</body>
+</html>
