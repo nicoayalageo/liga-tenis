@@ -33,6 +33,7 @@
           <span class="chip chip--hero chip--vivo" id="actualizado">En vivo</span>
           <span class="chip chip--hero" id="formato"></span>
           <button type="button" class="btn btn--hero" data-cargar-resultado>Cargar resultado</button>
+          <button type="button" class="btn btn--hero" data-inscribirme>Inscribirme</button>
         </div>
         <div class="stats" id="stats" style="margin-top:18px"></div>
       </div>
@@ -63,7 +64,10 @@
     <div id="sin-configurar" class="vacio" hidden>
       <h3>La liga aún no está configurada</h3>
       <p>El administrador debe definir el formato y los jugadores desde la <a href="admin.html">administración</a>.</p>
+      <p style="margin-top:12px">¿Vas a jugar? Puedes inscribirte desde ya y el administrador te confirmará.</p>
+      <div style="margin-top:10px"><button type="button" class="btn btn--sm" data-inscribirme>Inscribirme</button></div>
     </div>
+    <div id="mi-inscripcion" hidden style="margin-bottom:24px"></div>
 
     <div id="contenido" class="pila" hidden style="gap:36px">
       <section id="tabla-sec">
@@ -89,7 +93,7 @@
       </section>
 
       <section id="jugadores-sec">
-        <div class="seccion__cabecera"><h2>Jugadores</h2></div>
+        <div class="seccion__cabecera"><h2>Jugadores</h2><button type="button" class="btn btn--sm btn--sec" data-inscribirme>Inscribirme</button></div>
         <div id="jugadores"></div>
       </section>
     </div>

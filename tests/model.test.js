@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  normalizarConfig, newId, hoyLocal, esFechaValida, validarNombreJugador, prepararPartido, validateLiga,
+  normalizarConfig, newId, hoyLocal, esFechaValida, validarNombreJugador, validarInscripcion, prepararPartido, validateLiga,
 } from '../js/core/model.js';
 
 test('normalizarConfig rellena y corrige', () => {
@@ -71,4 +71,16 @@ test('validateLiga detecta inconsistencias', () => {
   assert.ok(e.some((x) => /permite 1/.test(x)));
   const limpia = validateLiga({ config: {}, jugadores: [{ id: 'a', nombre: 'Ana' }], partidos: [] });
   assert.deepEqual(limpia, []);
+});
+
+test('validarInscripcion limpia y rechaza duplicados', () => {
+  const jugadores = [{ id: 'j1', nombre: 'Ana Pérez' }];
+  const ok = validarInscripcion({ nombre: '  Beto   Díaz ', contacto: ' +56 9 1234 5678 ', mensaje: 'Juego los sábados' }, jugadores);
+  assert.equal(ok.ok, true);
+  assert.deepEqual(ok.datos, { nombre: 'Beto Díaz', contacto: '+56 9 1234 5678', mensaje: 'Juego los sábados' });
+  assert.equal(validarInscripcion({ nombre: 'ana perez' }, jugadores).ok, false);
+  assert.equal(validarInscripcion({ nombre: 'B' }).ok, false);
+  assert.equal(validarInscripcion({ nombre: 'Carla', mensaje: 'x'.repeat(201) }).ok, false);
+  assert.equal(validarInscripcion({ nombre: 'Carla', contacto: 'x'.repeat(81) }).ok, false);
+  assert.deepEqual(validarInscripcion({ nombre: 'Carla' }).datos, { nombre: 'Carla', contacto: '', mensaje: '' });
 });

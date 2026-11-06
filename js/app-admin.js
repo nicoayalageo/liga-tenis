@@ -3,8 +3,8 @@
 import { $, $$, h } from './util.js';
 import { aplicarTema, montarBotonTema } from './theme.js';
 import {
-  FIREBASE_CONFIGURADO, suscribirLiga, suscribirPropuestasPendientes, suscribirHistorial, suscribirAdmins,
-  suscribirSolicitudes, suscribirAcceso, mensajeError,
+  FIREBASE_CONFIGURADO, suscribirLiga, suscribirPropuestasPendientes, suscribirInscripcionesPendientes, suscribirHistorial,
+  suscribirAdmins, suscribirSolicitudes, suscribirAcceso, mensajeError,
 } from './db.js';
 import { observarSesion, cerrarSesion, reenviarVerificacion, recargarUsuario, intentarAltaPropietario, solicitarAdmin } from './auth.js';
 import { montarTabs, toast } from './ui/components.js';
@@ -24,6 +24,7 @@ const estado = {
   liga: null,
   sesion: null,
   propuestas: [],
+  inscripciones: [],
   historial: [],
   admins: [],
   solicitudes: [],
@@ -48,6 +49,7 @@ function ctx() {
     actor: actor(),
     uid: estado.sesion && estado.sesion.user ? estado.sesion.user.uid : null,
     propuestas: estado.propuestas,
+    inscripciones: estado.inscripciones,
     historial: estado.historial,
     admins: estado.admins,
     solicitudes: estado.solicitudes,
@@ -63,10 +65,11 @@ function pintarPanel() {
   if (!estado.liga || !estado.sesion || !estado.sesion.esAdmin) return;
   $('#quien').textContent = actor();
   $('#liga-nombre').textContent = estado.liga.config.configurada ? estado.liga.config.nombre : 'Liga sin configurar';
-  const n = estado.propuestas.length;
+  const n = estado.propuestas.length + estado.inscripciones.length;
   const contador = $('[data-tab="pendientes"] .contador');
   contador.textContent = n;
   contador.hidden = n === 0;
+  document.title = `${n ? `(${n}) ` : ''}Administración · Liga de Tenis`;
   const c = ctx();
   switch (estado.tab) {
     case 'pendientes': renderPendientes($('#panel-pendientes'), c); break;
@@ -92,6 +95,7 @@ function conectarAdmin() {
   const onErr = (e) => toast(mensajeError(e), 'error');
   subsAdmin = [
     suscribirPropuestasPendientes((l) => { estado.propuestas = l; pintarPanel(); }, onErr),
+    suscribirInscripcionesPendientes((l) => { estado.inscripciones = l; pintarPanel(); }, onErr),
     suscribirHistorial((l) => { estado.historial = l; if (estado.tab === 'historial') pintarPanel(); }, onErr),
     suscribirAdmins((l) => { estado.admins = l; if (estado.tab === 'admins') pintarPanel(); }, onErr),
     suscribirSolicitudes((l) => { estado.solicitudes = l; pintarSolicitudesBadge(); if (estado.tab === 'admins') pintarPanel(); }, onErr),
@@ -159,9 +163,10 @@ async function iniciar() {
   const params = new URLSearchParams(location.search);
   if (params.has('demo')) {
     if (params.get('tema')) document.documentElement.setAttribute('data-theme', params.get('tema'));
-    const { ligaDemo, propuestasDemo, historialDemo } = await import('./demo-data.js');
+    const { ligaDemo, propuestasDemo, inscripcionesDemo, historialDemo } = await import('./demo-data.js');
     estado.liga = ligaDemo;
     estado.propuestas = propuestasDemo;
+    estado.inscripciones = inscripcionesDemo;
     estado.historial = historialDemo;
     estado.admins = [{ id: 'uid-demo', email: 'admin@ejemplo.cl', nombre: 'Nicolás' }];
     estado.solicitudes = [{ id: 'uid-2', email: 'amigo@ejemplo.cl', nombre: 'Pedro', creadoEn: new Date() }];

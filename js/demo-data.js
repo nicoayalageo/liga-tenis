@@ -51,6 +51,11 @@ export const ligaDemo = {
   playoffs: null,
 };
 
+export const inscripcionesDemo = [
+  { id: 'insc1', nombre: 'Hernán Lagos', contacto: '+56 9 8765 4321', mensaje: 'Puedo jugar sábados por la mañana', estado: 'pendiente', enviadoPorUid: 'anon3', creadoEn: new Date(Date.now() - 1800000) },
+  { id: 'insc2', nombre: 'Ana Perez', contacto: '', mensaje: '', estado: 'pendiente', enviadoPorUid: 'anon4', creadoEn: new Date(Date.now() - 5400000) },
+];
+
 export const propuestasDemo = [
   { id: 'prop1', fase: 'liga', llaveId: null, jugador1: ids[3], jugador2: ids[1], fecha: '2026-03-27', formatoPartido: 'bo3_super', sets: [[6, 3], [4, 6], [10, 6]], ganador: ids[3], estado: 'completo', nota: '', estadoPropuesta: 'pendiente', enviadoPorUid: 'anon1', enviadoComo: ids[3], creadoEn: new Date(Date.now() - 3600000) },
   { id: 'prop2', fase: 'liga', llaveId: null, jugador1: ids[0], jugador2: ids[5], fecha: '2026-03-28', formatoPartido: 'bo3_super', sets: [[6, 2], [6, 1]], ganador: ids[0], estado: 'completo', nota: '', estadoPropuesta: 'pendiente', enviadoPorUid: 'anon2', enviadoComo: ids[0], creadoEn: new Date(Date.now() - 7200000) },

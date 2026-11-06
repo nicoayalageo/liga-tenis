@@ -9,6 +9,7 @@ import { renderCalendario } from './ui/calendario.js';
 import { renderPlayoffs } from './ui/playoffs.js';
 import { renderJugadores } from './ui/jugadores.js';
 import { abrirEnvioResultado, montarMisEnvios } from './ui/enviar-resultado.js';
+import { abrirInscripcion, montarMiInscripcion } from './ui/inscripcion.js';
 import { pendientes, esFormatoConCalendario } from './core/fixtures.js';
 import { FORMATOS_LIGA, FORMATOS_PARTIDO } from './core/formats.js';
 import { toast } from './ui/components.js';
@@ -20,6 +21,7 @@ let liga = null;
 let meta = null;
 const estadoResultados = { filtro: '' };
 const misEnvios = montarMisEnvios($('#mis-envios'), () => liga);
+const miInscripcion = montarMiInscripcion($('#mi-inscripcion'));
 
 function pintarCabecera() {
   const c = liga.config;
@@ -92,9 +94,11 @@ async function iniciar() {
     meta = { ultimaActualizacion: ligaDemo.config.updatedAt };
     pintar();
     $$('[data-cargar-resultado]').forEach((b) => b.addEventListener('click', () => abrirEnvioResultado(liga)));
+    $$('[data-inscribirme]').forEach((b) => b.addEventListener('click', () => abrirInscripcion(liga, { demo: true })));
     $('#reintentar').addEventListener('click', () => location.reload());
     montarNavegacion();
     if (params.get('abrir') === 'enviar') abrirEnvioResultado(liga);
+    if (params.get('abrir') === 'inscribir') abrirInscripcion(liga, { demo: true });
     return;
   }
   if (!FIREBASE_CONFIGURADO) {
@@ -103,11 +107,13 @@ async function iniciar() {
     $('#error-texto').textContent = 'La página aún no está conectada a la base de datos (falta js/firebase-config.js).';
     return;
   }
+  let abiertoInicial = false;
   suscribirLiga((l, m) => {
     liga = l;
     meta = m;
     $('#error').hidden = true;
     pintar();
+    if (!abiertoInicial && params.get('abrir') === 'inscribir') { abiertoInicial = true; abrirInscripcion(liga); }
   }, (e) => {
     $('#cargando').hidden = true;
     $('#error').hidden = false;
@@ -117,11 +123,15 @@ async function iniciar() {
     if (!liga || !liga.config.configurada) { toast('La liga aún no está configurada.', 'error'); return; }
     abrirEnvioResultado(liga);
   }));
+  $$('[data-inscribirme]').forEach((b) => b.addEventListener('click', () => {
+    if (!liga) { toast('Espera un momento, la liga se está cargando.', 'error'); return; }
+    abrirInscripcion(liga);
+  }));
   $('#reintentar').addEventListener('click', () => location.reload());
-  // Si este navegador ya envió propuestas, mostrar su estado.
+  // Si este navegador ya envió propuestas o inscripciones, mostrar su estado.
   try {
     const auth = getAuthInstance();
-    auth.onAuthStateChanged((u) => { if (u) misEnvios.conectar(u.uid); });
+    auth.onAuthStateChanged((u) => { if (u) { misEnvios.conectar(u.uid); miInscripcion.conectar(u.uid); } });
   } catch { /* sin Firebase */ }
   montarNavegacion();
 }

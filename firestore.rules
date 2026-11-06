@@ -2,7 +2,7 @@ rules_version = '2';
 
 // Reglas de seguridad de la liga.
 // - Lectura pública de la liga, jugadores, partidos aprobados y playoffs.
-// - Los jugadores (sesión anónima) solo pueden crear propuestas con el PIN correcto.
+// - Los jugadores (sesión anónima) solo pueden crear propuestas e inscripciones con el PIN correcto.
 // - Solo los administradores escriben datos definitivos.
 // - El propietario (correo verificado) puede darse de alta como primer administrador.
 
@@ -62,6 +62,19 @@ service cloud.firestore {
         && !('resueltoPor' in d) && !('resueltoEn' in d) && !('motivoRechazo' in d) && !('partidoId' in d);
     }
 
+    function inscripcionValida() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['nombre', 'contacto', 'mensaje', 'estado', 'enviadoPorUid', 'pin', 'creadoEn'])
+        && d.keys().hasAll(['nombre', 'contacto', 'mensaje', 'estado', 'enviadoPorUid', 'pin', 'creadoEn'])
+        && d.nombre is string && d.nombre.size() >= 2 && d.nombre.size() <= 40
+        && d.contacto is string && d.contacto.size() <= 80
+        && d.mensaje is string && d.mensaje.size() <= 200
+        && d.estado == 'pendiente'
+        && d.enviadoPorUid == request.auth.uid
+        && d.pin is string && d.pin.size() <= 20
+        && d.creadoEn == request.time;
+    }
+
     match /liga/{doc} {
       allow read: if true;
       allow write: if esAdmin();
@@ -85,6 +98,12 @@ service cloud.firestore {
     match /propuestas/{id} {
       allow read: if esAdmin() || (autenticado() && resource.data.enviadoPorUid == request.auth.uid);
       allow create: if autenticado() && propuestaValida() && request.resource.data.pin == acceso().pin;
+      allow update, delete: if esAdmin();
+    }
+
+    match /inscripciones/{id} {
+      allow read: if esAdmin() || (autenticado() && resource.data.enviadoPorUid == request.auth.uid);
+      allow create: if autenticado() && inscripcionValida() && request.resource.data.pin == acceso().pin;
       allow update, delete: if esAdmin();
     }
 

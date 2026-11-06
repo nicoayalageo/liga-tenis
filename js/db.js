@@ -33,8 +33,14 @@ export function getAuthInstance() {
   return firebase().auth;
 }
 
+// Los sets se guardan en Firestore como [{a,b}] porque no admite listas anidadas; aquí vuelven a [[a,b]].
+function desdeFirestore(datos) {
+  if (!datos || !Array.isArray(datos.sets)) return datos;
+  return { ...datos, sets: datos.sets.map((s) => (Array.isArray(s) ? s : [Number(s.a), Number(s.b)])) };
+}
+
 function docsDe(snap) {
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snap.docs.map((d) => desdeFirestore({ id: d.id, ...d.data() }));
 }
 
 /**
@@ -94,6 +100,18 @@ export function suscribirPropuestasResueltas(callback, onError = () => {}) {
 export function suscribirMisPropuestas(uid, callback, onError = () => {}) {
   const { db } = firebase();
   const q = query(collection(db, 'propuestas'), where('enviadoPorUid', '==', uid), orderBy('creadoEn', 'desc'));
+  return onSnapshot(q, (s) => callback(docsDe(s)), onError);
+}
+
+export function suscribirInscripcionesPendientes(callback, onError = () => {}) {
+  const { db } = firebase();
+  const q = query(collection(db, 'inscripciones'), where('estado', '==', 'pendiente'), orderBy('creadoEn', 'desc'));
+  return onSnapshot(q, (s) => callback(docsDe(s)), onError);
+}
+
+export function suscribirMisInscripciones(uid, callback, onError = () => {}) {
+  const { db } = firebase();
+  const q = query(collection(db, 'inscripciones'), where('enviadoPorUid', '==', uid), orderBy('creadoEn', 'desc'));
   return onSnapshot(q, (s) => callback(docsDe(s)), onError);
 }
 

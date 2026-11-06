@@ -4,7 +4,7 @@ import {
   doc, collection, setDoc, updateDoc, deleteDoc, addDoc, getDoc, runTransaction, writeBatch, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
 import { getDb } from './db.js';
-import { newId, normalizarConfig, LigaError, validarNombreJugador, prepararPartido } from './core/model.js';
+import { newId, normalizarConfig, LigaError, validarNombreJugador, validarInscripcion, prepararPartido } from './core/model.js';
 import { canAddMatch, generarRoundRobin, generarPlayoffs, tieneDependientes, crucesPlayoffsAbiertos, pendientes } from './core/fixtures.js';
 import { computeStandings } from './core/standings.js';
 import { formatScore } from './core/scoring.js';
@@ -12,6 +12,13 @@ import { partidosEntre } from './core/stats.js';
 
 function ahoraIso() {
   return new Date().toISOString();
+}
+
+// Firestore no admite listas anidadas: los sets [[6,4],[3,6]] se guardan como [{a:6,b:4},{a:3,b:6}].
+// La conversión inversa está en db.js (docsDe).
+function paraFirestore(partido) {
+  const sets = Array.isArray(partido.sets) ? partido.sets.map((s) => ({ a: Number(s[0]), b: Number(s[1]) })) : [];
+  return { ...partido, sets };
 }
 
 function entradaHistorial(batchOrTx, db, accion, detalle, actor) {
@@ -95,6 +102,61 @@ export async function eliminarJugador(liga, id, actor) {
   await batch.commit();
 }
 
+// ---------- Inscripciones ----------
+
+export async function enviarInscripcion(liga, datos, pin, uid) {
+  const db = getDb();
+  const v = validarInscripcion(datos, liga ? liga.jugadores : []);
+  if (!v.ok) throw new LigaError(v.motivo);
+  const limpio = String(pin || '').trim();
+  if (!limpio) throw new LigaError('Ingresa el PIN de la liga.');
+  const registro = {
+    ...v.datos,
+    estado: 'pendiente',
+    enviadoPorUid: uid,
+    pin: limpio,
+    creadoEn: serverTimestamp(),
+  };
+  const ref = await addDoc(collection(db, 'inscripciones'), registro);
+  return ref.id;
+}
+
+export async function aprobarInscripcion(liga, inscripcion, nombreFinal, actor) {
+  const db = getDb();
+  const v = validarNombreJugador(nombreFinal, liga.jugadores);
+  if (!v.ok) throw new LigaError(v.motivo);
+  const idJugador = newId('j');
+  await runTransaction(db, async (tx) => {
+    const ref = doc(db, 'inscripciones', inscripcion.id);
+    const s = await tx.get(ref);
+    if (!s.exists()) throw new LigaError('La inscripción ya no existe.');
+    if (s.data().estado !== 'pendiente') throw new LigaError('Esta inscripción ya fue resuelta por otra persona.');
+    tx.set(doc(db, 'jugadores', idJugador), {
+      nombre: v.nombre,
+      activo: true,
+      creadoEn: ahoraIso(),
+      origen: 'inscripcion',
+      inscripcionId: inscripcion.id,
+      contacto: inscripcion.contacto || '',
+    });
+    tx.update(ref, { estado: 'aprobada', resueltoPor: actor || null, resueltoEn: ahoraIso(), jugadorId: idJugador, nombreFinal: v.nombre, pin: '' });
+    entradaHistorial(tx, db, 'inscripcion', `Inscripción aprobada: ${v.nombre}${v.nombre !== inscripcion.nombre ? ` (se inscribió como ${inscripcion.nombre})` : ''}`, actor);
+  });
+  return idJugador;
+}
+
+export async function rechazarInscripcion(inscripcion, motivo, actor) {
+  const db = getDb();
+  await runTransaction(db, async (tx) => {
+    const ref = doc(db, 'inscripciones', inscripcion.id);
+    const s = await tx.get(ref);
+    if (!s.exists()) throw new LigaError('La inscripción ya no existe.');
+    if (s.data().estado !== 'pendiente') throw new LigaError('Esta inscripción ya fue resuelta por otra persona.');
+    tx.update(ref, { estado: 'rechazada', resueltoPor: actor || null, resueltoEn: ahoraIso(), motivoRechazo: String(motivo || '').slice(0, 200), pin: '' });
+    entradaHistorial(tx, db, 'inscripcion', `Inscripción rechazada: ${inscripcion.nombre}${motivo ? ` (${motivo})` : ''}`, actor);
+  });
+}
+
 // ---------- Partidos ----------
 
 function verificarCruce(liga, partido, excluirId = null) {
@@ -128,7 +190,7 @@ export async function crearPartido(liga, datos, actor, extra = {}) {
     editadoEn: null,
   };
   const batch = writeBatch(db);
-  batch.set(doc(db, 'partidos', id), registro);
+  batch.set(doc(db, 'partidos', id), paraFirestore(registro));
   entradaHistorial(batch, db, 'partido', `Resultado ingresado: ${descripcionPartido(liga, registro)}`, actor);
   await batch.commit();
   return id;
@@ -150,7 +212,7 @@ export async function editarPartido(liga, id, datos, actor) {
     verificarCruce(liga, prep.partido, id);
   }
   const batch = writeBatch(db);
-  batch.update(doc(db, 'partidos', id), { ...prep.partido, editadoPor: actor || null, editadoEn: ahoraIso() });
+  batch.update(doc(db, 'partidos', id), paraFirestore({ ...prep.partido, editadoPor: actor || null, editadoEn: ahoraIso() }));
   entradaHistorial(batch, db, 'partido', `Resultado editado: ${descripcionPartido(liga, existente)} → ${formatScore(prep.partido)}`, actor);
   await batch.commit();
 }
@@ -185,7 +247,7 @@ export async function enviarPropuesta(liga, datos, pin, uid, enviadoComo) {
     pin: limpio,
     creadoEn: serverTimestamp(),
   };
-  const ref = await addDoc(collection(db, 'propuestas'), registro);
+  const ref = await addDoc(collection(db, 'propuestas'), paraFirestore(registro));
   return ref.id;
 }
 
@@ -200,7 +262,7 @@ export async function aprobarPropuesta(liga, propuesta, datosFinales, actor) {
     const s = await tx.get(ref);
     if (!s.exists()) throw new LigaError('La propuesta ya no existe.');
     if (s.data().estadoPropuesta !== 'pendiente') throw new LigaError('Esta propuesta ya fue resuelta por otra persona.');
-    tx.set(doc(db, 'partidos', idPartido), {
+    tx.set(doc(db, 'partidos', idPartido), paraFirestore({
       ...prep.partido,
       origen: 'propuesta',
       propuestaId: propuesta.id,
@@ -209,7 +271,7 @@ export async function aprobarPropuesta(liga, propuesta, datosFinales, actor) {
       editadoPor: null,
       editadoEn: null,
       enviadoComo: propuesta.enviadoComo || null,
-    });
+    }));
     tx.update(ref, { estadoPropuesta: 'aprobada', resueltoPor: actor || null, resueltoEn: ahoraIso(), partidoId: idPartido, pin: '' });
     entradaHistorial(tx, db, 'propuesta', `Propuesta aprobada: ${descripcionPartido(liga, prep.partido)}`, actor);
   });

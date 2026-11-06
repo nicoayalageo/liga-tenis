@@ -25,9 +25,9 @@ tests/                Pruebas del núcleo (node --test)
 ## Cómo funciona
 
 1. El administrador configura la liga en `admin.html` → Configuración: nombre, formato de liga (todos contra todos a 1 o 2 vueltas, liga libre, con o sin playoffs), formato de partido (2 sets + super tiebreak, mejor de 3, 1 set, mejor de 5, libre), puntos por victoria y derrota, criterios de desempate (presets USTA/ATP, ITF, universitario o un orden propio) y el PIN para los jugadores.
-2. Agrega jugadores y genera el calendario (método del círculo; con número impar hay un "libre" por jornada).
+2. Agrega jugadores y genera el calendario (método del círculo; con número impar hay un "libre" por jornada). Los jugadores también pueden pulsar **Inscribirme** en la página pública (nombre, contacto opcional y PIN); la inscripción queda pendiente y el administrador la aprueba, la aprueba con otro nombre o la rechaza desde **Pendientes**. Funciona incluso antes de configurar la liga, para reunir a los jugadores.
 3. Un jugador pulsa **Cargar resultado** en la página pública, elige rival, marcador y escribe el PIN. El envío queda **pendiente**.
-4. El administrador lo ve en **Pendientes** y lo aprueba, lo edita y aprueba, o lo rechaza con un motivo. Solo entonces el partido se publica y la tabla cambia, al instante para todos.
+4. El administrador lo ve en **Pendientes** y lo aprueba, lo edita y aprueba, o lo rechaza con un motivo. Solo entonces el partido se publica y la tabla cambia, al instante para todos. La pestaña del navegador muestra entre paréntesis cuántas inscripciones y resultados esperan revisión.
 5. Todo cambio queda en **Historial**. El botón **Exportar respaldo** descarga la liga completa en JSON.
 
 Los administradores adicionales crean su cuenta en `admin.html`, verifican su correo y pulsan **Solicitar acceso**; el propietario aprueba desde **Administradores**.
@@ -50,6 +50,18 @@ Vista previa sin Firebase: `http://localhost:8080/index.html?demo=1` y `http://l
 4. En la consola de Firebase → Authentication: habilitar **Correo electrónico/contraseña** y **Anónimo**; en *Dominios autorizados* agregar el dominio de GitHub Pages.
 5. El correo del propietario está fijado en `firestore.rules` (`emailPropietario`). Al crear esa cuenta en `admin.html` y verificar el correo, queda como primer administrador automáticamente.
 6. Recomendado: en Google Cloud Console restringir la clave de API web a los dominios del sitio.
+
+## Avisos por correo
+
+El sitio no tiene servidor, así que los avisos se envían desde Google Apps Script con la cuenta del propietario del proyecto Firebase. El script `scripts/notificador-correo.gs` revisa cada 10 minutos las inscripciones y los resultados pendientes que aún no se han avisado, manda un correo con el resumen y marca cada documento con `avisado: true`. No expone ningún punto de entrada público.
+
+1. Entrar a [script.google.com](https://script.google.com) con la misma cuenta de Google que es propietaria del proyecto Firebase y crear un proyecto nuevo.
+2. En **Configuración del proyecto** (ícono de engranaje) marcar *Mostrar el archivo de manifiesto "appsscript.json" en el editor*.
+3. Reemplazar el contenido de `appsscript.json` por el de `scripts/appsscript.json` y el de `Código.gs` por el de `scripts/notificador-correo.gs`. Revisar las variables `PROYECTO`, `CORREO_DESTINO` y `URL_ADMIN` al inicio del script.
+4. Seleccionar la función `instalar` en la barra superior y pulsar **Ejecutar**. Google pedirá autorizar el acceso a Firestore y al envío de correo; aceptar. Esa ejecución crea el disparador cada 10 minutos y hace la primera revisión.
+5. Para probarlo, enviar una inscripción desde la página pública y esperar el correo. En **Activadores** se ve el historial de ejecuciones y los errores.
+
+Si cambia el PIN o se agregan administradores no hay que tocar el script. Para dejar de recibir avisos, borrar el disparador en **Activadores**.
 
 ## Licencia
 

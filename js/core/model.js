@@ -101,6 +101,21 @@ export function validarNombreJugador(nombre, jugadores = [], excluirId = null) {
  * datos: { jugador1, jugador2, fecha, estado, sets, ganador, nota, fase, llaveId, formatoPartido }
  * Devuelve { ok, errores, partido } donde partido está listo para guardarse (sin id ni auditoría).
  */
+/**
+ * Valida una solicitud de inscripción enviada desde la página pública.
+ * Devuelve los datos limpios listos para guardar.
+ */
+export function validarInscripcion(datos, jugadores = []) {
+  const d = datos || {};
+  const v = validarNombreJugador(d.nombre, jugadores);
+  if (!v.ok) return { ok: false, motivo: v.motivo };
+  const contacto = String(d.contacto || '').trim().replace(/\s+/g, ' ');
+  if (contacto.length > 80) return { ok: false, motivo: 'El contacto no puede superar 80 caracteres.' };
+  const mensaje = String(d.mensaje || '').trim();
+  if (mensaje.length > 200) return { ok: false, motivo: 'El mensaje no puede superar 200 caracteres.' };
+  return { ok: true, motivo: '', datos: { nombre: v.nombre, contacto, mensaje } };
+}
+
 export function prepararPartido(datos, config) {
   const errores = [];
   const estado = ['completo', 'retiro', 'wo'].includes(datos.estado) ? datos.estado : 'completo';
