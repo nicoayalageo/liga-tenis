@@ -115,7 +115,7 @@ export function renderConfig(contenedor, ctx) {
 
     <section class="tarjeta conf-seccion">
       <h3>PIN para los jugadores</h3>
-      <p class="texto-suave">Los jugadores lo escriben al cargar un resultado. Compártelo solo con los participantes. ${acceso && acceso.pin ? h`PIN actual: <strong class="mono">${acceso.pin}</strong>` : h`<strong>Todavía no hay PIN: nadie puede enviar resultados.</strong>`}</p>
+      <p class="texto-suave">Los jugadores lo escriben al inscribirse y al cargar un resultado. Compártelo solo con los participantes. ${acceso && acceso.pin ? h`PIN actual: <strong class="mono">${acceso.pin}</strong>` : h`<strong>Todavía no hay PIN: nadie puede enviar resultados.</strong>`}</p>
       <form class="inline-form" data-pin>
         <label for="cf-pin" class="visually-hidden">Nuevo PIN</label>
         <input id="cf-pin" class="entrada" type="text" minlength="4" maxlength="20" placeholder="Nuevo PIN (4 a 20 caracteres)" autocomplete="off">
