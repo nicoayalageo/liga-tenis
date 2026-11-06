@@ -53,11 +53,11 @@ Vista previa sin Firebase: `http://localhost:8080/index.html?demo=1` y `http://l
 
 ## Avisos por correo
 
-El sitio no tiene servidor, así que los avisos se envían desde Google Apps Script con la cuenta del propietario del proyecto Firebase. El script `scripts/notificador-correo.gs` revisa cada 10 minutos las inscripciones y los resultados pendientes que aún no se han avisado, manda un correo con el resumen y marca cada documento con `avisado: true`. No expone ningún punto de entrada público.
+El sitio no tiene servidor, así que los avisos se envían desde Google Apps Script con la cuenta del propietario del proyecto Firebase. El script `scripts/notificador-correo.gs` revisa cada 10 minutos las inscripciones y los resultados pendientes que aún no se han avisado, manda un correo a todos los administradores registrados (colección `admins`) con el resumen y marca cada documento con `avisado: true`. No expone ningún punto de entrada público.
 
 1. Entrar a [script.google.com](https://script.google.com) con la misma cuenta de Google que es propietaria del proyecto Firebase y crear un proyecto nuevo.
 2. En **Configuración del proyecto** (ícono de engranaje) marcar *Mostrar el archivo de manifiesto "appsscript.json" en el editor*.
-3. Reemplazar el contenido de `appsscript.json` por el de `scripts/appsscript.json` y el de `Código.gs` por el de `scripts/notificador-correo.gs`. Revisar las variables `PROYECTO`, `CORREO_DESTINO` y `URL_ADMIN` al inicio del script.
+3. Reemplazar el contenido de `appsscript.json` por el de `scripts/appsscript.json` y el de `Código.gs` por el de `scripts/notificador-correo.gs`. Revisar las variables `PROYECTO`, `CORREO_RESPALDO` y `URL_ADMIN` al inicio del script.
 4. Seleccionar la función `instalar` en la barra superior y pulsar **Ejecutar**. Google pedirá autorizar el acceso a Firestore y al envío de correo; aceptar. Esa ejecución crea el disparador cada 10 minutos y hace la primera revisión.
 5. Para probarlo, enviar una inscripción desde la página pública y esperar el correo. En **Activadores** se ve el historial de ejecuciones y los errores.
 

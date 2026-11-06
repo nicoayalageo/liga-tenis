@@ -10,7 +10,9 @@
 // Instalación: ver README.md, sección "Avisos por correo".
 
 var PROYECTO = 'liga-tenis-arcilla';
-var CORREO_DESTINO = 'nicolas.ayala@ug.uchile.cl';
+// Destinatarios: todos los administradores registrados en la colección `admins`.
+// Si por algún motivo no se pudiera leer la colección, se usa este correo de respaldo.
+var CORREO_RESPALDO = 'nicolas.ayala@ug.uchile.cl';
 var URL_ADMIN = 'https://nicoayalageo.github.io/liga-tenis/admin.html';
 var ASUNTO = 'Liga de tenis: hay novedades por aprobar';
 
@@ -48,7 +50,8 @@ function revisarPendientes() {
   }
 
   lineas.push('Apruébalos o recházalos en: ' + URL_ADMIN);
-  MailApp.sendEmail({ to: CORREO_DESTINO, subject: ASUNTO, body: lineas.join('\n') });
+  var destinatarios = correosAdmins_();
+  MailApp.sendEmail({ to: destinatarios.join(','), subject: ASUNTO, body: lineas.join('\n') });
 
   inscripciones.concat(propuestas).forEach(function (d) { marcarAvisado_(d.nombre); });
 }
@@ -96,6 +99,19 @@ function nombresJugadores_() {
     mapa[id] = aPlano_(d.fields || {}).nombre || id;
   });
   return mapa;
+}
+
+function correosAdmins_() {
+  var resp = UrlFetchApp.fetch(BASE + '/admins?pageSize=50', { headers: cabeceras_(), muteHttpExceptions: true });
+  var correos = [];
+  if (resp.getResponseCode() === 200) {
+    var datos = JSON.parse(resp.getContentText());
+    (datos.documents || []).forEach(function (d) {
+      var email = aPlano_(d.fields || {}).email;
+      if (email && correos.indexOf(email) === -1) correos.push(email);
+    });
+  }
+  return correos.length ? correos : [CORREO_RESPALDO];
 }
 
 function marcarAvisado_(nombreDoc) {
@@ -148,5 +164,5 @@ function instalar() {
   });
   ScriptApp.newTrigger('revisarPendientes').timeBased().everyMinutes(10).create();
   revisarPendientes();
-  Logger.log('Listo: se revisará cada 10 minutos y se avisará a ' + CORREO_DESTINO);
+  Logger.log('Listo: se revisará cada 10 minutos y se avisará a: ' + correosAdmins_().join(', '));
 }
