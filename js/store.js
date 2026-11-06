@@ -309,7 +309,7 @@ export async function generarCalendario(liga, actor) {
   const cal = generarRoundRobin(ids, vueltas);
   const calendario = { generadoEn: ahoraIso(), jugadores: cal.jugadores, jornadas: cal.jornadas, libres: cal.libres };
   const batch = writeBatch(db);
-  batch.update(doc(db, 'liga', 'config'), paraFirestore({ calendario, updatedAt: ahoraIso(), updatedBy: actor || null }));
+  batch.set(doc(db, 'liga', 'config'), paraFirestore({ calendario, updatedAt: ahoraIso(), updatedBy: actor || null }), { merge: true });
   entradaHistorial(batch, db, 'calendario', `Calendario generado: ${cal.jornadas.length} jornadas, ${ids.length} jugadores`, actor);
   await batch.commit();
   return calendario;

@@ -116,7 +116,7 @@ service cloud.firestore {
 
     match /solicitudesAdmin/{uid} {
       allow read: if esAdmin() || (autenticado() && request.auth.uid == uid);
-      allow create: if autenticado() && request.auth.uid == uid
+      allow create, update: if autenticado() && request.auth.uid == uid
         && request.auth.token.email != null && request.auth.token.email_verified == true
         && request.resource.data.keys().hasOnly(['email', 'nombre', 'creadoEn'])
         && request.resource.data.email == request.auth.token.email

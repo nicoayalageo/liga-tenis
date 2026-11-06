@@ -86,7 +86,11 @@ export async function recuperarContrasena(email) {
  * Devuelve true si quedó como admin.
  */
 export async function intentarAltaPropietario(user) {
-  if (!user || user.isAnonymous || !user.emailVerified) return false;
+  if (!user || user.isAnonymous) return false;
+  // El perfil puede decir "verificado" mientras el token que leen las reglas sigue diciendo lo contrario.
+  try { await reload(user); } catch { /* sin red: se intenta igual */ }
+  if (!user.emailVerified) return false;
+  try { await getIdToken(user, true); } catch { /* se intenta con el token actual */ }
   const db = getDb();
   const ref = doc(db, 'admins', user.uid);
   try {

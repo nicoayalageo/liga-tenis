@@ -131,6 +131,7 @@ async function pintarSinAutorizar() {
         <p>Pide acceso al administrador de la liga. Verá tu solicitud en su panel.</p>
         <div class="acciones">
           <button type="button" class="btn" data-solicitar ${yaSolicito ? 'disabled' : ''}>${yaSolicito ? 'Solicitud enviada' : 'Solicitar acceso'}</button>
+          <button type="button" class="btn btn--sec" data-reintentar-alta>Soy el propietario</button>
         </div>`}
       <p style="margin-top:16px"><button type="button" class="btn btn--fantasma" data-salir>Cerrar sesión</button></p>
     </div>
@@ -144,6 +145,12 @@ async function pintarSinAutorizar() {
     } else {
       toast('Tu correo aún no figura como verificado. Revisa la bandeja de entrada o spam.', 'error', 5000);
     }
+  });
+  const ba = $('[data-reintentar-alta]', cont);
+  if (ba) ba.addEventListener('click', async () => {
+    const u = await recargarUsuario();
+    const ok = await intentarAltaPropietario(u);
+    if (!ok) toast('No se pudo dar de alta. Esta cuenta debe ser el correo del propietario y estar verificada.', 'error', 5000);
   });
   const br = $('[data-reenviar]', cont);
   if (br) br.addEventListener('click', async () => { try { await reenviarVerificacion(); toast('Correo de verificación enviado.', 'ok'); } catch (e) { toast(mensajeError(e), 'error'); } });
