@@ -2,7 +2,7 @@
 
 import {
   onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
-  sendPasswordResetEmail, sendEmailVerification, signInAnonymously, updateProfile, reload,
+  sendPasswordResetEmail, sendEmailVerification, signInAnonymously, updateProfile, reload, getIdToken,
 } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
 import { getAuthInstance, getDb } from './db.js';
@@ -64,7 +64,11 @@ export async function reenviarVerificacion() {
 
 export async function recargarUsuario() {
   const u = usuarioActual();
-  if (u) await reload(u);
+  if (u) {
+    await reload(u);
+    // Las reglas de Firestore leen email_verified del token, no del perfil: hay que renovarlo.
+    await getIdToken(u, true);
+  }
   return usuarioActual();
 }
 
