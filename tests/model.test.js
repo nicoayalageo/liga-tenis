@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  normalizarConfig, newId, hoyLocal, esFechaValida, validarNombreJugador, validarInscripcion, prepararPartido, validateLiga,
+  normalizarConfig, newId, hoyLocal, esFechaValida, validarNombreJugador, validarInscripcion, prepararPartido, validateLiga, slug, idJugador, idPartido,
 } from '../js/core/model.js';
 
 test('normalizarConfig rellena y corrige', () => {
@@ -83,4 +83,38 @@ test('validarInscripcion limpia y rechaza duplicados', () => {
   assert.equal(validarInscripcion({ nombre: 'Carla', mensaje: 'x'.repeat(201) }).ok, false);
   assert.equal(validarInscripcion({ nombre: 'Carla', contacto: 'x'.repeat(81) }).ok, false);
   assert.deepEqual(validarInscripcion({ nombre: 'Carla' }).datos, { nombre: 'Carla', contacto: '', mensaje: '' });
+});
+
+test('slug e idJugador son estables e insensibles a tildes y mayúsculas', () => {
+  assert.equal(slug('Ana Pérez'), 'ana-perez');
+  assert.equal(idJugador('  ANA   pérez '), idJugador('Ana Pérez'));
+  assert.notEqual(idJugador('Ana Pérez'), idJugador('Ana Pereza'));
+  assert.equal(idJugador(''), 'j_x');
+});
+
+test('idPartido: mismo par en cualquier orden, un id por encuentro en rr1/rr2', () => {
+  const liga = { config: { formatoLiga: 'rr2' }, partidos: [] };
+  const a = idPartido(liga, { fase: 'liga', jugador1: 'j_a', jugador2: 'j_b' });
+  const b = idPartido(liga, { fase: 'liga', jugador1: 'j_b', jugador2: 'j_a' });
+  assert.equal(a, b);
+  assert.equal(a, 'p_j_a__j_b_1');
+  liga.partidos = [{ id: a }];
+  assert.equal(idPartido(liga, { fase: 'liga', jugador1: 'j_a', jugador2: 'j_b' }), 'p_j_a__j_b_2');
+  // Si se borró el primero, se reutiliza su hueco.
+  liga.partidos = [{ id: 'p_j_a__j_b_2' }];
+  assert.equal(idPartido(liga, { fase: 'liga', jugador1: 'j_a', jugador2: 'j_b' }), 'p_j_a__j_b_1');
+  // En rr1 solo hay un hueco: dos aprobaciones simultáneas chocan en el mismo id.
+  const rr1 = { config: { formatoLiga: 'rr1' }, partidos: [] };
+  assert.equal(idPartido(rr1, { fase: 'liga', jugador1: 'j_a', jugador2: 'j_b' }), 'p_j_a__j_b_1');
+});
+
+test('idPartido: liga libre distingue por fecha y marcador; playoffs por cruce', () => {
+  const liga = { config: { formatoLiga: 'libre' }, partidos: [] };
+  const base = { fase: 'liga', jugador1: 'j_a', jugador2: 'j_b', fecha: '2026-11-06', sets: [[6, 4], [3, 6], [10, 8]], estado: 'completo' };
+  const id1 = idPartido(liga, base);
+  assert.equal(id1, idPartido(liga, { ...base, jugador1: 'j_b', jugador2: 'j_a' }));
+  assert.notEqual(id1, idPartido(liga, { ...base, fecha: '2026-11-07' }));
+  assert.notEqual(id1, idPartido(liga, { ...base, sets: [[6, 4], [6, 3]] }));
+  assert.equal(idPartido(liga, { ...base, estado: 'wo', sets: [] }), 'p_j_a__j_b_2026-11-06_wo');
+  assert.equal(idPartido(liga, { fase: 'playoffs', llaveId: 'll_r1_0', jugador1: 'j_a', jugador2: 'j_b' }), 'p_po_ll_r1_0');
 });

@@ -5,19 +5,23 @@ import { abrirDialogo, confirmar, pedirTexto, toast } from './components.js';
 import { formularioPartido } from './partido-form.js';
 import { aprobarPropuesta, rechazarPropuesta, aprobarInscripcion, rechazarInscripcion } from '../store.js';
 import { mensajeError } from '../db.js';
-import { prepararPartido, validarNombreJugador } from '../core/model.js';
+import { prepararPartido, validarNombreJugador, idPartido, idJugador } from '../core/model.js';
 import { canAddMatch, crucesPlayoffsAbiertos } from '../core/fixtures.js';
 import { formatScore } from '../core/scoring.js';
 
-function evaluar(liga, p) {
+function evaluar(liga, p, todas = []) {
   const prep = prepararPartido(p, liga.config);
   if (!prep.ok) return { ok: false, motivo: prep.errores[0] };
+  const id = idPartido(liga, prep.partido);
+  if ((liga.partidos || []).some((m) => m.id === id)) return { ok: false, motivo: 'Este partido ya está registrado en Resultados.' };
+  const gemelas = todas.filter((q) => q.id !== p.id && q.jugador1 && prepararPartido(q, liga.config).ok && idPartido(liga, prepararPartido(q, liga.config).partido) === id);
+  const aviso = gemelas.length ? 'Hay otra propuesta pendiente del mismo partido: aprueba una y rechaza la otra.' : '';
   if (p.fase === 'playoffs') {
     const ok = crucesPlayoffsAbiertos(liga).some((c) => c.id === p.llaveId);
-    return ok ? { ok: true } : { ok: false, motivo: 'El cruce de playoffs ya no está disponible.' };
+    return ok ? { ok: true, aviso } : { ok: false, motivo: 'El cruce de playoffs ya no está disponible.' };
   }
   const c = canAddMatch(liga, p.jugador1, p.jugador2);
-  return c.ok ? { ok: true } : { ok: false, motivo: c.motivo };
+  return c.ok ? { ok: true, aviso } : { ok: false, motivo: c.motivo };
 }
 
 function renderInscripciones(contenedor, ctx) {
@@ -28,6 +32,7 @@ function renderInscripciones(contenedor, ctx) {
     <div class="pila" style="margin-bottom:28px">
       ${inscripciones.map((i) => {
         const v = validarNombreJugador(i.nombre, liga.jugadores);
+        const repetida = inscripciones.some((o) => o.id !== i.id && idJugador(o.nombre) === idJugador(i.nombre));
         return h`
         <article class="tarjeta propuesta ${v.ok ? '' : 'propuesta--invalida'}" data-insc="${i.id}">
           <div class="propuesta__cab">
@@ -37,6 +42,7 @@ function renderInscripciones(contenedor, ctx) {
           ${i.contacto ? h`<div>Contacto: <span class="mono">${i.contacto}</span></div>` : h`<div class="texto-suave">Sin contacto</div>`}
           ${i.mensaje ? h`<div class="texto-suave" style="margin-top:4px">“${i.mensaje}”</div>` : ''}
           ${v.ok ? '' : h`<div class="aviso aviso--error" style="margin:8px 0">${v.motivo} Usa "Editar nombre y aprobar".</div>`}
+          ${repetida ? h`<div class="aviso aviso--aviso" style="margin:8px 0">Hay otra inscripción pendiente con el mismo nombre: aprueba una y rechaza la otra.</div>` : ''}
           <div class="acciones" style="margin-top:10px">
             <button type="button" class="btn btn--verde btn--sm" data-aprobar ${v.ok ? '' : 'disabled'}>Aprobar</button>
             <button type="button" class="btn btn--sec btn--sm" data-editar>Editar nombre y aprobar</button>
@@ -95,7 +101,7 @@ export function renderPendientes(contenedor, ctx) {
     ${inscripciones.length ? h`<div class="seccion__cabecera"><h2>Resultados</h2></div>` : ''}
     <div class="pila">
       ${propuestas.map((p) => {
-        const ev = evaluar(liga, p);
+        const ev = evaluar(liga, p, propuestas);
         return h`
         <article class="tarjeta propuesta ${ev.ok ? '' : 'propuesta--invalida'}" data-id="${p.id}">
           <div class="propuesta__cab">
@@ -105,6 +111,7 @@ export function renderPendientes(contenedor, ctx) {
           <div class="propuesta__marcador mono">${formatScore(p)} ${p.ganador ? h`<span class="chip chip--arcilla">Gana ${nombreJugador(liga, p.ganador)}</span>` : ''}</div>
           ${p.fase === 'playoffs' ? h`<span class="chip chip--ocre">Playoffs</span>` : ''}
           ${ev.ok ? '' : h`<div class="aviso aviso--error" style="margin:8px 0">${ev.motivo}</div>`}
+          ${ev.aviso ? h`<div class="aviso aviso--aviso" style="margin:8px 0">${ev.aviso}</div>` : ''}
           <div class="acciones" style="margin-top:10px">
             <button type="button" class="btn btn--verde btn--sm" data-aprobar ${ev.ok ? '' : 'disabled'}>Aprobar</button>
             <button type="button" class="btn btn--sec btn--sm" data-editar>Editar y aprobar</button>

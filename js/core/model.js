@@ -72,6 +72,42 @@ export function newId(prefijo = 'x') {
   return `${prefijo}_${s}`;
 }
 
+/** Id estable a partir de un nombre: "Ana Pérez" → "ana-perez". Dos nombres iguales dan el mismo id. */
+export function slug(texto) {
+  return String(texto || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'x';
+}
+
+export function idJugador(nombre) {
+  return `j_${slug(nombre)}`;
+}
+
+/**
+ * Id determinista para un partido, de modo que dos aprobaciones simultáneas del mismo partido
+ * choquen en Firestore en vez de crear dos documentos.
+ * - Playoffs: uno por cruce de la llave.
+ * - Liga con vueltas (rr1/rr2): uno por par de jugadores y número de encuentro.
+ * - Liga libre: uno por par, fecha y marcador.
+ */
+export function idPartido(liga, partido) {
+  const par = [partido.jugador1, partido.jugador2].map(String).sort().join('__');
+  if (partido.fase === 'playoffs') return `p_po_${partido.llaveId || par}`;
+  const limite = reunionesRequeridas((liga.config || {}).formatoLiga);
+  const existentes = new Set((liga.partidos || []).map((m) => m.id));
+  if (Number.isFinite(limite)) {
+    for (let n = 0; n < limite; n += 1) {
+      const id = `p_${par}_${n + 1}`;
+      if (!existentes.has(id)) return id;
+    }
+    return `p_${par}_${limite}`;
+  }
+  const marcador = partido.estado === 'wo' ? 'wo' : (partido.sets || []).map((s) => `${s[0]}-${s[1]}`).join('_') + (partido.estado === 'retiro' ? '_ret' : '');
+  return `p_${par}_${partido.fecha || 'sin-fecha'}_${marcador || 'sin-marcador'}`;
+}
+
 export function hoyLocal(d = new Date()) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');

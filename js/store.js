@@ -5,7 +5,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
 import { getDb } from './db.js';
 import { codificar } from './core/firestore-codec.js';
-import { newId, normalizarConfig, LigaError, validarNombreJugador, validarInscripcion, prepararPartido } from './core/model.js';
+import { newId, normalizarConfig, LigaError, validarNombreJugador, validarInscripcion, prepararPartido, idJugador, idPartido } from './core/model.js';
 import { canAddMatch, generarRoundRobin, generarPlayoffs, tieneDependientes, crucesPlayoffsAbiertos, pendientes } from './core/fixtures.js';
 import { computeStandings } from './core/standings.js';
 import { formatScore } from './core/scoring.js';
@@ -63,11 +63,14 @@ export async function agregarJugador(liga, nombreNuevo, actor) {
   const db = getDb();
   const v = validarNombreJugador(nombreNuevo, liga.jugadores);
   if (!v.ok) throw new LigaError(v.motivo);
-  const id = newId('j');
-  const batch = writeBatch(db);
-  batch.set(doc(db, 'jugadores', id), { nombre: v.nombre, activo: true, creadoEn: ahoraIso() });
-  entradaHistorial(batch, db, 'jugador', `Jugador agregado: ${v.nombre}`, actor);
-  await batch.commit();
+  const id = idJugador(v.nombre);
+  await runTransaction(db, async (tx) => {
+    const ref = doc(db, 'jugadores', id);
+    const existente = await tx.get(ref);
+    if (existente.exists()) throw new LigaError(`Ya existe un jugador llamado ${existente.data().nombre}.`);
+    tx.set(ref, { nombre: v.nombre, activo: true, creadoEn: ahoraIso() });
+    entradaHistorial(tx, db, 'jugador', `Jugador agregado: ${v.nombre}`, actor);
+  });
   return id;
 }
 
@@ -123,13 +126,16 @@ export async function aprobarInscripcion(liga, inscripcion, nombreFinal, actor) 
   const db = getDb();
   const v = validarNombreJugador(nombreFinal, liga.jugadores);
   if (!v.ok) throw new LigaError(v.motivo);
-  const idJugador = newId('j');
+  const idNuevo = idJugador(v.nombre);
   await runTransaction(db, async (tx) => {
     const ref = doc(db, 'inscripciones', inscripcion.id);
     const s = await tx.get(ref);
     if (!s.exists()) throw new LigaError('La inscripción ya no existe.');
     if (s.data().estado !== 'pendiente') throw new LigaError('Esta inscripción ya fue resuelta por otra persona.');
-    tx.set(doc(db, 'jugadores', idJugador), {
+    const refJugador = doc(db, 'jugadores', idNuevo);
+    const yaExiste = await tx.get(refJugador);
+    if (yaExiste.exists()) throw new LigaError(`Ya existe un jugador llamado ${yaExiste.data().nombre}. Usa "Editar nombre y aprobar".`);
+    tx.set(refJugador, {
       nombre: v.nombre,
       activo: true,
       creadoEn: ahoraIso(),
@@ -137,10 +143,10 @@ export async function aprobarInscripcion(liga, inscripcion, nombreFinal, actor) 
       inscripcionId: inscripcion.id,
       contacto: inscripcion.contacto || '',
     });
-    tx.update(ref, { estado: 'aprobada', resueltoPor: actor || null, resueltoEn: ahoraIso(), jugadorId: idJugador, nombreFinal: v.nombre, pin: '' });
+    tx.update(ref, { estado: 'aprobada', resueltoPor: actor || null, resueltoEn: ahoraIso(), jugadorId: idNuevo, nombreFinal: v.nombre, pin: '' });
     entradaHistorial(tx, db, 'inscripcion', `Inscripción aprobada: ${v.nombre}${v.nombre !== inscripcion.nombre ? ` (se inscribió como ${inscripcion.nombre})` : ''}`, actor);
   });
-  return idJugador;
+  return idNuevo;
 }
 
 export async function rechazarInscripcion(inscripcion, motivo, actor) {
@@ -177,7 +183,7 @@ export async function crearPartido(liga, datos, actor, extra = {}) {
   const prep = prepararPartido(datos, liga.config);
   if (!prep.ok) throw new LigaError(prep.errores[0]);
   verificarCruce(liga, prep.partido);
-  const id = newId('p');
+  const id = idPartido(liga, prep.partido);
   const registro = {
     ...prep.partido,
     origen: extra.origen || 'admin',
@@ -187,12 +193,17 @@ export async function crearPartido(liga, datos, actor, extra = {}) {
     editadoPor: null,
     editadoEn: null,
   };
-  const batch = writeBatch(db);
-  batch.set(doc(db, 'partidos', id), paraFirestore(registro));
-  entradaHistorial(batch, db, 'partido', `Resultado ingresado: ${descripcionPartido(liga, registro)}`, actor);
-  await batch.commit();
+  await runTransaction(db, async (tx) => {
+    const ref = doc(db, 'partidos', id);
+    const existente = await tx.get(ref);
+    if (existente.exists()) throw new LigaError(MENSAJE_PARTIDO_DUPLICADO);
+    tx.set(ref, paraFirestore(registro));
+    entradaHistorial(tx, db, 'partido', `Resultado ingresado: ${descripcionPartido(liga, registro)}`, actor);
+  });
   return id;
 }
+
+const MENSAJE_PARTIDO_DUPLICADO = 'Ese partido ya está registrado (mismos jugadores y, en liga libre, misma fecha y marcador). Revisa Resultados.';
 
 export async function editarPartido(liga, id, datos, actor) {
   const db = getDb();
@@ -254,13 +265,16 @@ export async function aprobarPropuesta(liga, propuesta, datosFinales, actor) {
   const prep = prepararPartido(datosFinales, liga.config);
   if (!prep.ok) throw new LigaError(prep.errores[0]);
   verificarCruce(liga, prep.partido);
-  const idPartido = newId('p');
+  const idNuevo = idPartido(liga, prep.partido);
   await runTransaction(db, async (tx) => {
     const ref = doc(db, 'propuestas', propuesta.id);
     const s = await tx.get(ref);
     if (!s.exists()) throw new LigaError('La propuesta ya no existe.');
     if (s.data().estadoPropuesta !== 'pendiente') throw new LigaError('Esta propuesta ya fue resuelta por otra persona.');
-    tx.set(doc(db, 'partidos', idPartido), paraFirestore({
+    const refPartido = doc(db, 'partidos', idNuevo);
+    const yaExiste = await tx.get(refPartido);
+    if (yaExiste.exists()) throw new LigaError(MENSAJE_PARTIDO_DUPLICADO);
+    tx.set(refPartido, paraFirestore({
       ...prep.partido,
       origen: 'propuesta',
       propuestaId: propuesta.id,
@@ -270,10 +284,10 @@ export async function aprobarPropuesta(liga, propuesta, datosFinales, actor) {
       editadoEn: null,
       enviadoComo: propuesta.enviadoComo || null,
     }));
-    tx.update(ref, { estadoPropuesta: 'aprobada', resueltoPor: actor || null, resueltoEn: ahoraIso(), partidoId: idPartido, pin: '' });
+    tx.update(ref, { estadoPropuesta: 'aprobada', resueltoPor: actor || null, resueltoEn: ahoraIso(), partidoId: idNuevo, pin: '' });
     entradaHistorial(tx, db, 'propuesta', `Propuesta aprobada: ${descripcionPartido(liga, prep.partido)}`, actor);
   });
-  return idPartido;
+  return idNuevo;
 }
 
 export async function rechazarPropuesta(liga, propuesta, motivo, actor) {
